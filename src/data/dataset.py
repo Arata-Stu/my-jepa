@@ -30,7 +30,7 @@ class MultiViewCocoDataset(datasets.CocoDetection):
         if not os.path.exists(image_dir):
             raise FileNotFoundError(f"画像ディレクトリが見つかりません: {image_dir}")
 
-        super().__init__(image_dir, ann_file)
+        super().__init__(image_dir, ann_file, transform=None)
         
         self.view_transforms = transforms
         self.num_crops = num_crops
