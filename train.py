@@ -6,6 +6,7 @@ from torch.amp import autocast, GradScaler
 from tqdm import tqdm  
 
 from src.data.dataset import MultiViewCocoDataset, collate_fn
+from src.data.transform import get_train_transforms_coco, get_val_transforms_coco
 from src.model.build import get_backbone
 from src.model.architecture import ImageSSL
 from src.utils.loss import VICRegLoss
@@ -59,7 +60,7 @@ def main(cfg: DictConfig) -> None:
     train_dataset = MultiViewCocoDataset(
         cfg.data.train_path, 
         split="train", 
-        transforms=cfg.data.transforms, 
+        transforms=get_train_transforms_coco(cfg.data.size),
         num_crops=cfg.data.num_crops
     )
 

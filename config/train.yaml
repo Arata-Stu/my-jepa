@@ -13,7 +13,9 @@ model:
 data:
   dataset_path: /path/to/dataset
   batch_size: 64
-  num_workers: 12
+  num_workers: 12 
+  size: [640, 640]  
+  num_crops: 2
   
 training:
   epoch: 100

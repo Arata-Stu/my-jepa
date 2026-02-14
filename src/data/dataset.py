@@ -32,7 +32,7 @@ class MultiViewCocoDataset(datasets.CocoDetection):
 
         super().__init__(image_dir, ann_file)
         
-        self.transforms = transforms
+        self.view_transforms = transforms
         self.num_crops = num_crops
 
     def __getitem__(self, idx):
@@ -65,10 +65,10 @@ class MultiViewCocoDataset(datasets.CocoDetection):
 
         # 指定された数だけビューを生成
         views_img, views_target = [], []
-        if self.transforms is not None:
+        if self.view_transforms is not None:
             for _ in range(self.num_crops):
                 # v2.Composeにより、毎回異なるランダム変換が適用される
-                v_img, v_target = self.transforms(img, base_target)
+                v_img, v_target = self.view_transforms(img, base_target)
                 views_img.append(v_img)
                 views_target.append(v_target)
         else:
