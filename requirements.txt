@@ -4,3 +4,5 @@ torchvision
 tqdm
 hydra-core
 tensorboard
+pycocotools
+matplotlib
