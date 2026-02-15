@@ -132,7 +132,7 @@ def main(cfg: DictConfig) -> None:
         )
         
         # 学習率の更新
-        scheduler.step()
+        scheduler.step(epoch=epoch)
         
         # エポック終了後のサマリー表示
         lr = optimizer.param_groups[0]['lr']
