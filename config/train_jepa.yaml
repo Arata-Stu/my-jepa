@@ -4,7 +4,7 @@ log_dir: ./logs/train/${now:%Y-%m-%d}/${now:%H-%M-%S}
 model:
   backbone:
     type: cnn  # Options: "cnn", "vit"
-    name: resnet18  # For CNN: "resnet18", "resnet34", etc; For ViT: "swin_tiny", "swin_small", etc
+    name: resnet50  # For CNN: "resnet18", "resnet34", etc; For ViT: "swin_tiny", "swin_small", etc
     out_features: ['c2', 'c3', 'c4', 'c5']  
 
   proj_hidden_dim: 2048
@@ -17,23 +17,23 @@ data:
   num_workers: 12 
   size: [224, 224]  
   num_crops: 2
-  use_labels: false
+  use_labels: true
   
 training:
-  epoch: 100
+  epoch: 300
   optim:
-    lr: 1e-3
+    lr: 0.3
     weight_decay: 1e-4
     warmup_epochs: 10
     epoch: ${training.epoch}
     min_lr: 1e-6
-    warmup_start_lr: 1e-6
+    warmup_start_lr: 3.0e-5
   
   loss:
-    std_coeff: 10.0
-    cov_coeff: 1.0
+    std_coeff: 1.0
+    cov_coeff: 80.0
 
 
 hydra:
   run:
-    dir: ./outputs/train/${now:%Y-%m-%d}/${now:%H-%M-%S}
+    dir: ./outputs/train_jepa/${now:%Y-%m-%d}/${now:%H-%M-%S}

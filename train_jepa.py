@@ -73,7 +73,7 @@ def validate_one_epoch(model, dataloader, loss_fn, device, epoch):
     avg_loss = total_loss / len(dataloader)
     return avg_loss
 
-@hydra.main(config_path="config", config_name="train", version_base="1.2")
+@hydra.main(config_path="config", config_name="train_jepa", version_base="1.2")
 def main(cfg: DictConfig) -> None:
     print(OmegaConf.to_yaml(cfg))
 
