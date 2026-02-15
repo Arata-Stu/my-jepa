@@ -16,69 +16,58 @@ def prepare_batch(image, bboxes, masks, labels):
     return image, {"boxes": bboxes, "masks": masks, "labels": labels}
 
 class MultiViewCocoDataset(datasets.CocoDetection):
-    """
-    COCO 2017データセット専用クラス。
-    rootを指定するだけで、自動的に images/annotations のパスを構成します。
-    """
-    def __init__(self, root, split="train", transforms=None, num_crops=2):
+    def __init__(self, root, split="train", transforms=None, num_crops=2, use_labels=True):
         image_dir = os.path.join(root, "images", f"{split}2017")
         ann_file = os.path.join(root, "annotations", f"instances_{split}2017.json")
         
-        # パス存在確認
-        if not os.path.exists(ann_file):
-            raise FileNotFoundError(f"アノテーションファイルが見つかりません: {ann_file}")
-        if not os.path.exists(image_dir):
-            raise FileNotFoundError(f"画像ディレクトリが見つかりません: {image_dir}")
-
+        self.use_labels = use_labels
+        
         super().__init__(image_dir, ann_file, transform=None)
         
         self.view_transforms = transforms
         self.num_crops = num_crops
 
     def __getitem__(self, idx):
-        # 親クラスからRAWデータ（PIL画像とアノテーションリスト）を取得
-        img, target = super().__getitem__(idx)
-        image_id = self.ids[idx]
 
-        # bboxを [xmin, ymin, xmax, ymax] に変換
-        boxes = [obj["bbox"] for obj in target]
-        labels = [obj["category_id"] for obj in target]
-        boxes = torch.as_tensor(boxes, dtype=torch.float32).reshape(-1, 4)
-        
-        # COCO [x, y, w, h] -> [xmin, ymin, xmax, ymax]
-        if boxes.shape[0] > 0:
-            boxes[:, 2:] += boxes[:, :2]
-        
+        img = self._load_image(self.ids[idx])
         w, h = img.size
         
-        # ベースとなるtv_tensors辞書の作成
-        base_target = {
-            "boxes": tv_tensors.BoundingBoxes(boxes, format="XYXY", canvas_size=(h, w)),
-            "labels": torch.as_tensor(labels, dtype=torch.int64),
-            "image_id": torch.tensor([image_id])
-        }
+        target = {"image_id": torch.tensor([self.ids[idx]])}
 
-        # セグメンテーションマスクの処理
-        if len(target) > 0 and "segmentation" in target[0]:
-            masks = [self.coco.annToMask(obj) for obj in target]
-            base_target["masks"] = tv_tensors.Mask(torch.stack([torch.as_tensor(m) for m in masks]))
+        # 2. ラベルが必要な場合のみアノテーションを処理
+        if self.use_labels:
+            ann_ids = self.coco.getAnnIds(imgIds=self.ids[idx])
+            anns = self.coco.loadAnns(ann_ids)
+            
+            boxes = [obj["bbox"] for obj in anns]
+            labels = [obj["category_id"] for obj in anns]
+            boxes = torch.as_tensor(boxes, dtype=torch.float32).reshape(-1, 4)
+            
+            if boxes.shape[0] > 0:
+                boxes[:, 2:] += boxes[:, :2] # XYWH -> XYXY
+            
+            target.update({
+                "boxes": tv_tensors.BoundingBoxes(boxes, format="XYXY", canvas_size=(h, w)),
+                "labels": torch.as_tensor(labels, dtype=torch.int64),
+            })
 
-        # 指定された数だけビューを生成
+            if len(anns) > 0 and "segmentation" in anns[0]:
+                masks = [self.coco.annToMask(obj) for obj in anns]
+                target["masks"] = tv_tensors.Mask(torch.stack([torch.as_tensor(m) for m in masks]))
+
+        # 3. ビューの生成
         views_img, views_target = [], []
-        if self.view_transforms is not None:
-            for _ in range(self.num_crops):
-                # v2.Composeにより、毎回異なるランダム変換が適用される
-                v_img, v_target = self.view_transforms(img, base_target)
+        for _ in range(self.num_crops):
+            if self.view_transforms is not None:
+                # v2.Compose は target が空（image_idのみ）でも正しく動作します
+                v_img, v_target = self.view_transforms(img, target)
                 views_img.append(v_img)
                 views_target.append(v_target)
-        else:
-            views_img = [img] * self.num_crops
-            views_target = [base_target] * self.num_crops
+            else:
+                views_img.append(img)
+                views_target.append(target)
 
-        if self.num_crops == 1:
-            return views_img[0], views_target[0]
-
-        return views_img, views_target
+        return (views_img[0], views_target[0]) if self.num_crops == 1 else (views_img, views_target)
 
 def collate_fn(batch):
     # 最初の要素を確認して、Multi-viewかSingle-viewか判定

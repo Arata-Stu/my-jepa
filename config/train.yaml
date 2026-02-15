@@ -17,6 +17,7 @@ data:
   num_workers: 12 
   size: [224, 224]  
   num_crops: 2
+  use_labels: false
   
 training:
   epoch: 100
