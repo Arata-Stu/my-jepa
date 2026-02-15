@@ -5,6 +5,7 @@ model:
   backbone:
     type: cnn  # Options: "cnn", "vit"
     name: resnet18  # For CNN: "resnet18", "resnet34", etc; For ViT: "swin_tiny", "swin_small", etc
+    out_features: ['c2', 'c3', 'c4', 'c5']  
 
   proj_hidden_dim: 2048
   proj_output_dim: 2048
