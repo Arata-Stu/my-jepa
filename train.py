@@ -50,6 +50,29 @@ def train_one_epoch(model, dataloader, loss_fn, optimizer, scaler, device, epoch
     avg_loss = total_loss / len(dataloader)
     return avg_loss
 
+def validate_one_epoch(model, dataloader, loss_fn, device, epoch):
+    model.eval()
+    total_loss = 0.0
+    
+    pbar = tqdm(dataloader, desc=f"Val   [{epoch+1}]", leave=True)
+    
+    with torch.no_grad(): # 勾配計算を無効化
+        for images, _ in pbar:
+            images = [img.to(device, non_blocking=True) for img in images]
+            image1, image2 = images[0], images[1]
+
+            # 順伝播のみ
+            _, z1 = model(image1)
+            _, z2 = model(image2)
+            loss_dict = loss_fn(z1, z2)
+            
+            current_loss = loss_dict["loss"].item()
+            total_loss += current_loss
+            pbar.set_postfix({"val_loss": f"{current_loss:.4f}"})
+
+    avg_loss = total_loss / len(dataloader)
+    return avg_loss
+
 @hydra.main(config_path="config", config_name="train", version_base="1.2")
 def main(cfg: DictConfig) -> None:
     print(OmegaConf.to_yaml(cfg))
@@ -65,6 +88,14 @@ def main(cfg: DictConfig) -> None:
         use_labels=cfg.data.use_labels
     )
 
+    val_dataset = MultiViewCocoDataset(
+        cfg.data.dataset_path, 
+        split="val", 
+        transforms=get_val_transforms_coco(cfg.data.size),
+        num_crops=cfg.data.num_crops,
+        use_labels=cfg.data.use_labels
+    )
+
     train_loader = DataLoader(
         train_dataset,
         batch_size=cfg.data.batch_size,
@@ -72,6 +103,16 @@ def main(cfg: DictConfig) -> None:
         num_workers=cfg.data.num_workers,
         pin_memory=True,
         drop_last=True,
+        collate_fn=collate_fn 
+    )
+
+    val_loader = DataLoader(
+        val_dataset,
+        batch_size=cfg.data.batch_size,
+        shuffle=False, 
+        num_workers=cfg.data.num_workers,
+        pin_memory=True,
+        drop_last=False,
         collate_fn=collate_fn 
     )
 
