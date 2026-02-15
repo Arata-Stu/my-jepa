@@ -59,8 +59,14 @@ class MultiViewCocoDataset(datasets.CocoDetection):
         views_img, views_target = [], []
         for _ in range(self.num_crops):
             if self.view_transforms is not None:
-                # v2.Compose は target が空（image_idのみ）でも正しく動作します
-                v_img, v_target = self.view_transforms(img, target)
+                if self.use_labels:
+                    # ラベルがある場合は (image, target) のペアで渡す
+                    v_img, v_target = self.view_transforms(img, target)
+                else:
+                    # ラベルがない場合は画像のみを渡す（これでエラーを回避）
+                    v_img = self.view_transforms(img)
+                    v_target = target # image_id だけ入った辞書
+                
                 views_img.append(v_img)
                 views_target.append(v_target)
             else:
