@@ -1,0 +1,35 @@
+log_dir: ./logs/train/${now:%Y-%m-%d}/${now:%H-%M-%S}  
+
+model:
+  backbone:
+    type: cnn
+    name: resnet50
+    out_features: ['c2', 'c3', 'c4', 'c5']  
+
+  decoder_dim: 256
+
+data:
+  dataset_path: /path/to/dataset
+  batch_size: 64
+  num_workers: 12 
+  size: [224, 224]  
+  num_crops: 1      
+  use_labels: true
+
+training:
+  epoch: 300
+  mask_ratio: 0.6   
+  patch_size: 32    
+  
+  optim:
+    lr: 0.3
+    weight_decay: 1e-4
+    warmup_epochs: 10
+    epoch: ${training.epoch}
+    min_lr: 1e-6
+    warmup_start_lr: 3.0e-5
+  
+
+hydra:
+  run:
+    dir: ./outputs/train_mae/${now:%Y-%m-%d}/${now:%H-%M-%S}

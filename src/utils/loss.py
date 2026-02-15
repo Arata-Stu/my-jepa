@@ -91,3 +91,23 @@ class VICRegLoss(nn.Module):
             "std_loss": std_loss,
             "cov_loss": cov_loss
         }
+    
+class MAELoss(nn.Module):
+    def __init__(self, norm_pix_loss: bool = False):
+        
+        super().__init__()
+        self.norm_pix_loss = norm_pix_loss
+
+    def forward(self, prediction, target, mask):
+        
+        # 1. 全ピクセルの二乗誤差を計算
+        loss_all = F.mse_loss(prediction, target, reduction='none') # [B, 3, H, W]
+        
+        # 2. マスクされたピクセルのみを抽出
+        # maskは [B, 1, H, W] なので、broadcastingにより [B, 3, H, W] に適用される
+        mask_loss = (loss_all * mask).sum() / (mask.sum() + 1e-6)
+
+        return {
+            "loss": mask_loss,
+            "reconstruction_loss": mask_loss
+        }
