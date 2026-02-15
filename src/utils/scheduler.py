@@ -1,3 +1,5 @@
+import torch
+
 class WarmupCosineScheduler:
     """Warmup cosine learning rate scheduler"""
 
