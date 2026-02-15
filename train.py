@@ -89,18 +89,26 @@ def main(cfg: DictConfig) -> None:
         proj_output_dim=cfg.model.proj_output_dim,
         use_projector=cfg.model.use_projector
     ).to(device)
+
+    encoder_params = sum(p.numel() for p in backbone.parameters())
     
-    log_model_info(model)
+    projector_params = (
+        sum(p.numel() for p in model.projector.parameters())
+        if cfg.model.use_projector
+        else 0
+    )
+    log_model_info(model, {"encoder": encoder_params, "projector": projector_params})
+
 
     # --- Loss & Optimizer ---
-    loss_fn = VICRegLoss(std_coeff=cfg.loss.std_coeff, cov_coeff=cfg.loss.cov_coeff)
+    loss_fn = VICRegLoss(std_coeff=cfg.training.loss.std_coeff, cov_coeff=cfg.training.loss.cov_coeff)
 
     scaler = GradScaler()
     
     optimizer = LARS(
         model.parameters(),
-        lr=cfg.optim.lr,
-        weight_decay=cfg.optim.weight_decay,
+        lr=cfg.training.optim.lr,
+        weight_decay=cfg.training.optim.weight_decay,
         eta=0.02,
         clip_lr=True,
         exclude_bias_n_norm=True,
@@ -109,15 +117,15 @@ def main(cfg: DictConfig) -> None:
 
     scheduler = WarmupCosineScheduler(
         optimizer,
-        warmup_epochs=cfg.optim.warmup_epochs,
-        max_epochs=cfg.optim.epoch,
-        base_lr=cfg.optim.lr,
-        min_lr=cfg.optim.min_lr,
-        warmup_start_lr=cfg.optim.warmup_start_lr,
+        warmup_epochs=cfg.training.optim.warmup_epochs,
+        max_epochs=cfg.training.optim.epoch,
+        base_lr=cfg.training.optim.lr,
+        min_lr=cfg.training.optim.min_lr,
+        warmup_start_lr=cfg.training.optim.warmup_start_lr,
     )
 
     # --- Training Loop ---
-    for epoch in range(cfg.optim.epoch):
+    for epoch in range(cfg.training.optim.epoch):
         train_loss = train_one_epoch(
             model, train_loader, loss_fn, optimizer, scaler, device, epoch
         )

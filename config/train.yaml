@@ -15,7 +15,7 @@ data:
   dataset_path: /path/to/dataset
   batch_size: 64
   num_workers: 12 
-  size: [640, 640]  
+  size: [224, 224]  
   num_crops: 2
   
 training:
@@ -27,6 +27,10 @@ training:
     epoch: ${training.epoch}
     min_lr: 1e-6
     warmup_start_lr: 1e-6
+  
+  loss:
+    std_coeff: 10.0
+    cov_coeff: 1.0
 
 
 hydra:
