@@ -58,7 +58,7 @@ def main(cfg: DictConfig) -> None:
 
     # --- Data ---
     train_dataset = MultiViewCocoDataset(
-        cfg.data.train_path, 
+        cfg.data.dataset_path, 
         split="train", 
         transforms=get_train_transforms_coco(cfg.data.size),
         num_crops=cfg.data.num_crops
