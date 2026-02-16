@@ -1,5 +1,5 @@
-
-log_dir: ./logs/train/${now:%Y-%m-%d}/${now:%H-%M-%S}  
+ckpt_dir: ./ckpts/train_jepa/${now:%Y-%m-%d}/${now:%H-%M-%S}  
+log_dir: ./logs/train_jepa/${now:%Y-%m-%d}/${now:%H-%M-%S}  
 
 model:
   backbone:
